@@ -2,7 +2,8 @@
 commit:
   scope: true
   lower_case: true
-  message_length: 100
+  min_message_length: 5
+  max_message_length: 100
   scope_length: 15
   co_authoring_file: co-authors.yml
   emojis: false

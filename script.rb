@@ -139,7 +139,6 @@ class Git
    def commit
       # (Future functionality - list also the files that have been added and restore them if unselected) from multiselect
       # Git commit (max 100char for message)
-      #   4. Ask for a description of the feature - first letter to lower case - validate not blank
       #   5. Ask for co author - multi select from existing list + new co author
       #   6. If new co author is chosen, validate email in string 
       #   7. Save to txt file with co authors
@@ -158,11 +157,11 @@ class Git
       end
 
       scope = process_msg_or_scope(scope)
-      message_length = @config["commit"]["message_length"] - (scope ? scope.length : 0  + change_type.length)
+      max_message_length = @config["commit"]["max_message_length"] - (scope ? scope.length : 0  + change_type.length)
 
       commit_msg = @prompt.ask(prompt(COMMIT, "Enter a commit message: (max 100 chars)")) do |q|
-         q.validate(/^.{0,#{message_length}}$/,
-            "Length can't be more than #{message_length} characters")
+         q.validate(/^.{#{@config["commit"]["min_message_length"]},#{max_message_length}}$/,
+            "Length has to be more than #{@config["commit"]["min_message_length"]} and less than #{max_message_length} characters")
          q.convert -> (i) {
             i[0] = i[0].downcase
             i.strip!
