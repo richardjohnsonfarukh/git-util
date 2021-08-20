@@ -1,0 +1,38 @@
+--- 
+commit:
+  emojis: false
+  scope: true
+  lower_case: true
+  types:
+    - name: feat
+      description: A new feature
+      emoji: '✨'
+    - name: fix 
+      description: A bug fix
+    - name: style
+      emoji: '🐛'
+      description: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
+    - name: test 
+      description: Adding missing tests or correcting existing tests
+      emoji: '🚨'
+    - name: refactor
+      description:  A code change that neither fixes a bug nor adds a feature
+      emoji: '📦'
+    - name: build
+      description: "Changes that affect the build system or external dependencies (example scopes: gulp, broccoli, npm)"
+      emoji: '🛠'
+    - name: ci
+      description: "Changes to our CI configuration files and scripts (example scopes: Travis, Circle, BrowserStack, SauceLabs)"
+      emoji: '⚙️'
+    - name: chore 
+      description: Other changes that don't modify src or test files
+      emoji: '♻️'
+    - name: revert
+      description: Reverts a previous commit
+      emoji: '🗑'
+    - name: docs
+      description: Documentation only changes
+      emoji: '📚'
+  message_length: 100
+  co_authoring_file: co-authors.yml
+  
