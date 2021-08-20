@@ -1,8 +1,11 @@
 --- 
 commit:
-  emojis: false
   scope: true
   lower_case: true
+  message_length: 100
+  scope_length: 15
+  co_authoring_file: co-authors.yml
+  emojis: false
   types:
     - name: feat
       description: A new feature
@@ -33,6 +36,5 @@ commit:
     - name: docs
       description: Documentation only changes
       emoji: '📚'
-  message_length: 100
-  co_authoring_file: co-authors.yml
+
   

@@ -1,10 +1,7 @@
 #!/usr/bin/ruby
-
-
 class Git
    require "tty-command"
    require "tty-prompt"
-   require "tty-file"
    require "pastel"
    require 'optparse'
    require "yaml"
@@ -23,11 +20,12 @@ class Git
       @prompt = TTY::Prompt.new(interrupt: :exit)
       @cmd = TTY::Command.new(printer: TTY::Command::Printers::Null)
       @p = Pastel.new
+      @reader = TTY::Reader.new
 
       begin 
          @config = YAML.load(File.read(__dir__ + "/" + CONFIG_FILE_NAME))
       rescue 
-         puts prompt(ERROR, "No suitable config file \"#{CONFIG_FILE_NAME}\" has been found")
+         puts prompt(ERROR, "No suitable config file \"#{CONFIG_FILE_NAME}\" has been found - exiting script")
          exit(false)
       end
       
@@ -42,7 +40,7 @@ class Git
          parser.on("-h", "--help", "prints this help") do
             puts parser
             exit(true)
-          end
+         end
       end.parse!
    end
 
@@ -86,11 +84,6 @@ class Git
    end
 
    def add(status)
-
-      #   1. Read the files from the status -s command 
-      #   2. Select them with multi select or choose "select all"
-      #   3. Go to commit stage
-
       unstaged, added = status.get_all_files()
 
       if (added.length + unstaged.length) == 0
@@ -99,16 +92,19 @@ class Git
       end
       
       unless @add_all
-         selected = @prompt.multi_select(prompt(ADD, "Select files to commit:"), unstaged + added, cycle: true) do |menu|
+         selected = @prompt.multi_select(prompt(ADD, "Select files to commit:"), unstaged + added, cycle: true, echo: false) do |menu|
             unless added.empty?
                menu.default *added
             end
          end
       else
+         puts prompt(ADD, "Selected files to commit:")
+         added.each do |file|
+            puts "  #{@p.green(file)}"
+         end
          return
       end
       
-
       files_to_stage = Array.new
       files_to_restore = Array.new
 
@@ -132,6 +128,9 @@ class Git
          puts prompt(EXIT, "No files have been added to staging area - exiting script")
          exit(true)
       else
+         selected.each do |file|
+            puts "  #{@p.green(file)}"
+         end
          @cmd.run("git add #{files_to_stage.join(" ")}")
       end
 
@@ -140,24 +139,83 @@ class Git
    def commit
       # (Future functionality - list also the files that have been added and restore them if unselected) from multiselect
       # Git commit (max 100char for message)
-      #   1. List the files to be committed
-      #   2. Read the plausible feature list and ask for a feature type - single select
-      #   3. Ask for the scope for the feature as text - max 12 chars (optional) - 
       #   4. Ask for a description of the feature - first letter to lower case - validate not blank
       #   5. Ask for co author - multi select from existing list + new co author
       #   6. If new co author is chosen, validate email in string 
       #   7. Save to txt file with co authors
       #   8. Go to git push
 
-      commit_types = @config["commit"]["types"]
-      
-      commit = "git commit -m "
+      commit_types = commit_type_hash(@config)
+      change_type = @prompt.select(prompt(COMMIT, "Select change type:"), commit_types, cycle: true, filter: true)
+
+      scope = @prompt.ask(prompt(COMMIT, "What is the scope of this change? (enter to skip)")) do |q|
+         q.validate(/^.{0,#{@config["commit"]["scope_length"]}}$/,
+             "Length can't be more than #{@config["commit"]["scope_length"]} characters")
+         q.convert -> (i) do
+            i.strip!
+            return i
+         end
+      end
+
+      scope = process_msg_or_scope(scope)
+      message_length = @config["commit"]["message_length"] - (scope ? scope.length : 0  + change_type.length)
+
+      commit_msg = @prompt.ask(prompt(COMMIT, "Enter a commit message: (max 100 chars)")) do |q|
+         q.validate(/^.{0,#{message_length}}$/,
+            "Length can't be more than #{message_length} characters")
+         q.convert -> (i) {
+            i[0] = i[0].downcase
+            i.strip!
+            return i
+         }
+      end
+
+      commit_msg = process_msg_or_scope(commit_msg)
+
+      co_authors = co_author_hash(@config)
+
+      # Ask if you want to add a co author, y/n
+
+      unless co_authors.empty?
+         # If there are co authors, ask to select one, or select "new author"
+         # If create :
+         #   ask for name (validate capital letters)
+         #   ask for email (validate email)
+         #   save to co author hash and save it back to updated co authors file
+      else 
+         # create new co-author:
+         #   ask for name (validate capital letters)
+         #   ask for email (validate email)
+         #   save to co author hash and save it back to updated co authors file
+      end 
+         
 
    end
 
-   # def print_commit_types(commit_types)
+   def commit_type_hash(config)
+      commit_type_hash = Hash.new
+      @config["commit"]["types"].each do |type|
+         commit_type_hash[ "#{type["name"]}: #{type["description"]}" ] = type["name"]
+      end
+      
+      return commit_type_hash
+   end
 
-   # end
+   def process_msg_or_scope(str)
+      
+      if str and str[-1].match(/\.|!|\?/) and str.length > 2
+         return str[0..-2]
+      end
+      return str
+   end
+
+   def co_author_hash(config)
+      unless @config["commit"]["co_authoring_file"]
+         return Hash.new
+      end
+
+      return YAML.load(File.read(__dir__ + "/" +  @config["commit"]["co_authoring_file"]))
+   end
 
    def status_and_branch_name
       begin 
@@ -203,13 +261,14 @@ class Git
       dashes_left = "-" * (HEADING_LEN-(heading.length+dashes_right.length))
 
       if err
-         return "[#{dashes_left}#{@p.red(ERROR)}#{dashes_right}] #{@p.bold(prompt)}"
+         return "\n[#{dashes_left}#{@p.red(ERROR)}#{dashes_right}] #{@p.bold(prompt)}"
       end
       
-      return "[#{dashes_left}#{@p.blue(heading)}#{dashes_right}] #{@p.bold(prompt)}"
+      return "\n[#{dashes_left}#{@p.blue(heading)}#{dashes_right}] #{@p.bold(prompt)}"
    end
 
 end
+
 
 
 def main
