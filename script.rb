@@ -11,6 +11,7 @@ class Git
    HEADING_LEN = 8
    STATUS = "status"
    COMMIT = "commit"
+   DEBUG = "debugg"
    PUSH = "push"
    ERROR = "error"
    ADD = "gitadd"
@@ -22,6 +23,8 @@ class Git
       @cmd = TTY::Command.new(printer: TTY::Command::Printers::Null)
       @p = Pastel.new
       @reader = TTY::Reader.new
+      @print_commands = false
+      @debug_mode = false
 
       begin 
          @config = YAML.load(File.read(__dir__ + "/" + CONFIG_FILE_NAME))
@@ -36,7 +39,11 @@ class Git
             @add_all = true
          end
          parser.on("-p", "--print", "print command executions") do |arg|
+            @print_commands = true
             @cmd = TTY::Command.new
+         end
+         parser.on("-d", "--debug", "debug mode - commands don't execute") do
+            @debug_mode = true
          end
          parser.on("-h", "--help", "prints this help") do
             puts parser
@@ -122,7 +129,7 @@ class Git
       end
 
       unless files_to_restore.empty? 
-         @cmd.run("git restore --staged #{files_to_restore.join(" ")}")
+         run_command("git restore --staged #{files_to_restore.join(" ")}")
       end 
 
       if selected.empty?
@@ -132,7 +139,7 @@ class Git
          selected.each do |file|
             puts "  #{@p.green(file)}"
          end
-         @cmd.run("git add #{files_to_stage.join(" ")}")
+         run_command("git add #{files_to_stage.join(" ")}")
       end
 
    end
@@ -181,12 +188,12 @@ class Git
 
       git_commit = build_commit(commit_type, commit_scope, commit_msg, commit_co_author)
 
-      # begin
-      #    @cmd.run(git_commit)
-      # rescue
-      #    puts prompt(ERROR, "Unexpected error while trying to perform: \n  #{@p.yellow.bold(git_commit)}")
-      #    exit(false)
-      # end 
+      begin
+         run_command(git_commit)
+      rescue
+         puts prompt(ERROR, "Unexpected error while trying to perform: \n  #{@p.yellow.bold(git_commit)}")
+         exit(false)
+      end 
    end
 
    def build_commit(type, scope, msg, co_author)
@@ -202,6 +209,13 @@ class Git
       return "git commit -m #{type}#{scope}: #{msg}#{co_author}"
    end
 
+   def run_command(command)
+      if @debug
+         puts prompt(DEBUG, command)
+      else
+         @cmd.run(command)
+      end
+   end
 
    def commit_type_hash()
       commit_type_hash = Hash.new
@@ -267,7 +281,7 @@ class Git
    def status_and_branch_name
       begin 
          if @add_all
-            outout, e = @cmd.run("git add .")
+            run_command("git add .")
          end
 
          all_files, e = @cmd.run("git status -s")
@@ -293,10 +307,10 @@ class Git
 
    def push
       begin 
-         current_branch, err = @cmd.run("git push")
+         run_command("git push")
       rescue 
          current_branch, err = @cmd.run("git branch --show-current")
-         @cmd.run("git push --set-upstream origin #{current_branch}")
+         run_command("git push --set-upstream origin #{current_branch}")
       end
    end
 
