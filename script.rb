@@ -7,6 +7,7 @@ class Git
    require "yaml"
 
    CONFIG_FILE_NAME = "config.yml"
+   OTHER_CO_AUTHOR = "Other co-author"
    HEADING_LEN = 8
    STATUS = "status"
    COMMIT = "commit"
@@ -137,17 +138,10 @@ class Git
    end
 
    def commit
-      # (Future functionality - list also the files that have been added and restore them if unselected) from multiselect
-      # Git commit (max 100char for message)
-      #   5. Ask for co author - multi select from existing list + new co author
-      #   6. If new co author is chosen, validate email in string 
-      #   7. Save to txt file with co authors
-      #   8. Go to git push
+      commit_types = commit_type_hash()
+      commit_type = @prompt.select(prompt(COMMIT, "Select change type:"), commit_types, cycle: true, filter: true)
 
-      commit_types = commit_type_hash(@config)
-      change_type = @prompt.select(prompt(COMMIT, "Select change type:"), commit_types, cycle: true, filter: true)
-
-      scope = @prompt.ask(prompt(COMMIT, "What is the scope of this change? (enter to skip)")) do |q|
+      commit_scope = @prompt.ask(prompt(COMMIT, "What is the scope of this change? (enter to skip)")) do |q|
          q.validate(/^.{0,#{@config["commit"]["scope_length"]}}$/,
              "Length can't be more than #{@config["commit"]["scope_length"]} characters")
          q.convert -> (i) do
@@ -156,42 +150,60 @@ class Git
          end
       end
 
-      scope = process_msg_or_scope(scope)
-      max_message_length = @config["commit"]["max_message_length"] - (scope ? scope.length : 0  + change_type.length)
+      max_message_length = @config["commit"]["max_message_length"] - (commit_scope ? commit_scope.length : 0  + commit_type.length)
 
       commit_msg = @prompt.ask(prompt(COMMIT, "Enter a commit message: (max 100 chars)")) do |q|
          q.validate(/^.{#{@config["commit"]["min_message_length"]},#{max_message_length}}$/,
             "Length has to be more than #{@config["commit"]["min_message_length"]} and less than #{max_message_length} characters")
-         q.convert -> (i) {
+         q.convert -> (i) do
             i[0] = i[0].downcase
             i.strip!
             return i
-         }
+         end
       end
 
-      commit_msg = process_msg_or_scope(commit_msg)
+      use_co_author = @prompt.yes?(prompt(COMMIT, "Would you like to add a co-author?"))
 
-      co_authors = co_author_hash(@config)
+      if use_co_author
+         commit_co_author = nil
+         co_authors, co_authors_config = co_author_hash()
 
-      # Ask if you want to add a co author, y/n
+         unless co_authors.empty?
+            commit_co_author = @prompt.select(prompt(COMMIT, "Who is your co-author?"), co_authors)
 
-      unless co_authors.empty?
-         # If there are co authors, ask to select one, or select "new author"
-         # If create :
-         #   ask for name (validate capital letters)
-         #   ask for email (validate email)
-         #   save to co author hash and save it back to updated co authors file
-      else 
-         # create new co-author:
-         #   ask for name (validate capital letters)
-         #   ask for email (validate email)
-         #   save to co author hash and save it back to updated co authors file
-      end 
-         
+            if commit_co_author == OTHER_CO_AUTHOR 
+               commit_co_author = add_co_author(co_authors_config)
+            end
+         else 
+            commit_co_author = add_co_author(co_authors_config)
+         end 
+      end
 
+      git_commit = build_commit(commit_type, commit_scope, commit_msg, commit_co_author)
+
+      # begin
+      #    @cmd.run(git_commit)
+      # rescue
+      #    puts prompt(ERROR, "Unexpected error while trying to perform: \n  #{@p.yellow.bold(git_commit)}")
+      #    exit(false)
+      # end 
    end
 
-   def commit_type_hash(config)
+   def build_commit(type, scope, msg, co_author)
+      msg = process_msg_or_scope(msg)
+      scope = process_msg_or_scope(scope, scope: true)
+
+      if co_author
+         co_author = co_author.prepend("\n\n")
+      else
+         co_author = ""
+      end
+
+      return "git commit -m #{type}#{scope}: #{msg}#{co_author}"
+   end
+
+
+   def commit_type_hash()
       commit_type_hash = Hash.new
       @config["commit"]["types"].each do |type|
          commit_type_hash[ "#{type["name"]}: #{type["description"]}" ] = type["name"]
@@ -200,20 +212,56 @@ class Git
       return commit_type_hash
    end
 
-   def process_msg_or_scope(str)
-      
-      if str and str[-1].match(/\.|!|\?/) and str.length > 2
-         return str[0..-2]
+   def process_msg_or_scope(str, scope: false)
+      if scope and (!str or str == "")
+         return ""
       end
+
+      if str and str[-1].match(/\.|!|\?/) and str.length > 2
+         str = str[0..-2]
+      end
+
+      if scope
+         str = "(#{scope})"
+      end
+
       return str
    end
 
-   def co_author_hash(config)
+
+   def co_author_hash()
       unless @config["commit"]["co_authoring_file"]
          return Hash.new
       end
 
-      return YAML.load(File.read(__dir__ + "/" +  @config["commit"]["co_authoring_file"]))
+      co_authors = YAML.load(File.read(__dir__ + "/" +  @config["commit"]["co_authoring_file"]))
+      co_authors_hash = Hash.new
+
+      co_authors.each do |auth| 
+         co_authors_hash["#{auth["name"]} (#{auth["email"]})"] = "Co-authored-by: #{auth["name"]} <#{auth["email"]}>"
+      end
+
+      co_authors_hash[OTHER_CO_AUTHOR] = OTHER_CO_AUTHOR
+
+      return co_authors_hash, co_authors
+   end
+
+   def add_co_author(co_authors)
+      name = @prompt.ask(prompt(COMMIT, "What is your co-author's name?")) do |q|
+         q.validate(/^[A-Z].*/)
+         q.modify :strip
+      end
+      email = @prompt.ask(prompt(COMMIT, "What is your co-author's email address?")) do |q|
+         q.validate :email
+         q.modify :strip
+      end
+
+      co_authors << { "name" => name, "email" => email }
+      File.open(@config["commit"]["co_authoring_file"], "w") do |file|
+         file.write(co_authors.to_yaml)
+      end
+
+      return "Co-authored-by: #{name} <#{email}>"
    end
 
    def status_and_branch_name
@@ -236,7 +284,8 @@ class Git
       end
 
       unless status
-         exit(false)
+         puts prompt(ERROR, "No files to be added - exiting script")
+         exit(true)
       end
       
       return status
@@ -265,9 +314,7 @@ class Git
       
       return "\n[#{dashes_left}#{@p.blue(heading)}#{dashes_right}] #{@p.bold(prompt)}"
    end
-
 end
-
 
 
 def main

@@ -37,5 +37,20 @@ commit:
     - name: docs
       description: Documentation only changes
       emoji: '📚'
-
+message:
+    select_files: "Select files to commit:"
+    staged_files: "Selected files to commit:"
+    change_type: "Select change type:"
+    scope: "What is the scope of this change? (enter to skip)"
+    commit_message: "Enter a commit message: (max 100 chars)"
+    co_author_yes_no: "Would you like to add a co-author"
+    co_author: "Who is your co-author?"
+    co_author_name: "What is your co-author's name?"
+    co_author_email: "What is your co-author's email address?"
+error:
+    not_a_repo: Current directory is not in a repository - exiting script
+    no_files_selected: No files selected for staging area - exiting script
+    no_files_to_commit: No modified files, nothing to commit - exiting script
+    no_config: No suitable config file %s has been found - exiting script
+    commit_error: "Unexpected error while trying to perform: \n  %s"
   
