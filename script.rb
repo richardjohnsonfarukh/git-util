@@ -88,7 +88,6 @@ class Git
       def get_all_files
          return @unstaged_files, @added_files
       end
-
    end
 
    def add(status)
@@ -206,7 +205,7 @@ class Git
          co_author = ""
       end
 
-      return "git commit -m #{type}#{scope}: #{msg}#{co_author}"
+      return "git commit -m \"#{type}#{scope}: #{msg}#{co_author}\""
    end
 
    def run_command(command)
