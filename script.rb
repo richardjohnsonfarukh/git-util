@@ -329,7 +329,6 @@ class Git
    end
 end
 
-
 def main
    git = Git.new
    status = git.status_and_branch_name()
