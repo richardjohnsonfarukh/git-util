@@ -38,7 +38,7 @@ class Git
          parser.on("-a", "--all", "add all files in directory to staging") do |arg|
             @add_all = true
          end
-         parser.on("-p", "--print", "print command executions") do |arg|
+         parser.on("-v", "--verbose", "print command executions") do |arg|
             @print_commands = true
             @cmd = TTY::Command.new
          end
@@ -94,18 +94,18 @@ class Git
       unstaged, added = status.get_all_files()
 
       if (added.length + unstaged.length) == 0
-         prompt(EXIT, "No files to be committed, exiting script")
+         prompt(EXIT, @config["exit"]["no_files_to_commit"])
          exit(true)
       end
       
       unless @add_all
-         selected = @prompt.multi_select(prompt(ADD, "Select files to commit:"), unstaged + added, cycle: true, echo: false) do |menu|
+         selected = @prompt.multi_select(prompt(ADD, @config["message"]["select_files"]), unstaged + added, cycle: true, echo: false) do |menu|
             unless added.empty?
                menu.default *added
             end
          end
       else
-         puts prompt(ADD, "Selected files to commit:")
+         puts prompt(ADD, @config["message"]["staged_files"])
          added.each do |file|
             puts "  #{@p.green(file)}"
          end
@@ -132,7 +132,7 @@ class Git
       end 
 
       if selected.empty?
-         puts prompt(EXIT, "No files have been added to staging area - exiting script")
+         puts prompt(EXIT, @config["exit"]["no_files_selected"])
          exit(true)
       else
          selected.each do |file|
@@ -145,9 +145,9 @@ class Git
 
    def commit
       commit_types = commit_type_hash()
-      commit_type = @prompt.select(prompt(COMMIT, "Select change type:"), commit_types, cycle: true, filter: true)
+      commit_type = @prompt.select(prompt(COMMIT, @config["message"]["change_type"]), commit_types, cycle: true, filter: true)
 
-      commit_scope = @prompt.ask(prompt(COMMIT, "What is the scope of this change? (enter to skip)")) do |q|
+      commit_scope = @prompt.ask(prompt(COMMIT, @config["message"]["scope"])) do |q|
          q.validate(/^.{0,#{@config["commit"]["scope_length"]}}$/,
              "Length can't be more than #{@config["commit"]["scope_length"]} characters")
          q.convert -> (i) do
@@ -158,7 +158,7 @@ class Git
 
       max_message_length = @config["commit"]["max_message_length"] - (commit_scope ? commit_scope.length : 0  + commit_type.length)
 
-      commit_msg = @prompt.ask(prompt(COMMIT, "Enter a commit message: (max 100 chars)")) do |q|
+      commit_msg = @prompt.ask(prompt(COMMIT, @config["message"]["commit_message"] % max_message_length)) do |q|
          q.validate(/^.{#{@config["commit"]["min_message_length"]},#{max_message_length}}$/,
             "Length has to be more than #{@config["commit"]["min_message_length"]} and less than #{max_message_length} characters")
          q.convert -> (i) do
@@ -168,14 +168,14 @@ class Git
          end
       end
 
-      use_co_author = @prompt.yes?(prompt(COMMIT, "Would you like to add a co-author?"))
+      use_co_author = @prompt.yes?(prompt(COMMIT, @config["message"]["co_author_yes_no"]))
 
       if use_co_author
          commit_co_author = nil
          co_authors, co_authors_config = co_author_hash()
 
          unless co_authors.empty?
-            commit_co_author = @prompt.select(prompt(COMMIT, "Who is your co-author?"), co_authors)
+            commit_co_author = @prompt.select(prompt(COMMIT, @config["message"]["co_author"]), co_authors)
 
             if commit_co_author == OTHER_CO_AUTHOR 
                commit_co_author = add_co_author(co_authors_config)
@@ -190,14 +190,14 @@ class Git
       begin
          run_command(git_commit)
       rescue
-         puts prompt(ERROR, "Unexpected error while trying to perform: \n  #{@p.yellow.bold(git_commit)}")
+         puts prompt(ERROR, @config["exit"]["commit_error"] % @p.yellow.bold(git_commit))
          exit(false)
       end 
    end
 
    def build_commit(type, scope, msg, co_author)
       msg = process_msg_or_scope(msg)
-      scope = process_msg_or_scope(scope, scope: true)
+      scope = process_msg_or_scope(scope, isScope: true)
 
       if co_author
          co_author = co_author.prepend("\n\n")
@@ -209,8 +209,8 @@ class Git
    end
 
    def run_command(command)
-      if @debug
-         puts prompt(DEBUG, command)
+      if @debug_mode
+         puts prompt(DEBUG, @p.yellow(command))
       else
          @cmd.run(command)
       end
@@ -225,8 +225,8 @@ class Git
       return commit_type_hash
    end
 
-   def process_msg_or_scope(str, scope: false)
-      if scope and (!str or str == "")
+   def process_msg_or_scope(str, isScope: false)
+      if isScope and (!str or str == "")
          return ""
       end
 
@@ -234,8 +234,8 @@ class Git
          str = str[0..-2]
       end
 
-      if scope
-         str = "(#{scope})"
+      if isScope
+         str = "(#{str})"
       end
 
       return str
@@ -260,11 +260,11 @@ class Git
    end
 
    def add_co_author(co_authors)
-      name = @prompt.ask(prompt(COMMIT, "What is your co-author's name?")) do |q|
+      name = @prompt.ask(prompt(COMMIT, @config["message"]["co_author_name"])) do |q|
          q.validate(/^[A-Z].*/)
          q.modify :strip
       end
-      email = @prompt.ask(prompt(COMMIT, "What is your co-author's email address?")) do |q|
+      email = @prompt.ask(prompt(COMMIT, @config["message"]["co_author_email"])) do |q|
          q.validate :email
          q.modify :strip
       end
@@ -286,7 +286,7 @@ class Git
          all_files, e = @cmd.run("git status -s")
 
       rescue 
-         puts prompt(STATUS, "Current directory is not in a repository - exiting script")
+         puts prompt(STATUS, @config["exit"]["not_a_repo"])
          exit(false)
       end
 
@@ -297,7 +297,7 @@ class Git
       end
 
       unless status
-         puts prompt(ERROR, "No files to be added - exiting script")
+         puts prompt(ERROR, @config["exit"]["no_files_selected"])
          exit(true)
       end
       
@@ -334,6 +334,7 @@ def main
    status = git.status_and_branch_name()
    git.add(status)
    git.commit()
+   git.push()
 end 
 
 main()
