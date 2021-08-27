@@ -1,4 +1,5 @@
 #!/usr/bin/ruby
+
 class Git
    require "tty-command"
    require "tty-prompt"
