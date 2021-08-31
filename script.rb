@@ -143,7 +143,7 @@ class Git
          co_authors, co_authors_config = co_author_hash()
 
          unless co_authors.empty?
-            commit_co_author = @prompt.select(prompt(COMMIT, @config["message"]["co_author"]), co_authors)
+            commit_co_author = @prompt.select(prompt(COMMIT, @config["message"]["co_author"]), co_authors, cycle: true, filter: true)
 
             if commit_co_author == OTHER_CO_AUTHOR 
                commit_co_author = add_co_author(co_authors_config)
