@@ -6,6 +6,7 @@ class Git
    require "pastel"
    require 'optparse'
    require "yaml"
+   require_relative "status"
 
    CONFIG_FILE_NAME = "config.yml"
    OTHER_CO_AUTHOR = "Other co-author"
@@ -51,44 +52,6 @@ class Git
             exit(true)
          end
       end.parse!
-   end
-
-   class Status
-      attr_reader :branch_name
-      attr_reader :added_files
-      attr_reader :unstaged_files
-
-      def initialize(unstaged_files, added_files, branch_name)
-
-         @branch_name = branch_name
-         @added_files = get_added(added_files)
-         @unstaged_files = get_unstaged(unstaged_files)
-      end
-
-      def get_unstaged(unstaged_files)
-         arr = Array.new
-         unstaged_files = unstaged_files.split("\n")
-         unstaged_files.each do |line|
-            arr << line.split[1]
-         end
-
-         arr.delete_if do |file| 
-            @added_files.include? file
-         end
-         return arr
-      end
-
-      def get_added(added_files)
-         if added_files
-            return added_files.split("\n")
-         else 
-            return Array.new
-         end
-      end
-
-      def get_all_files
-         return @unstaged_files, @added_files
-      end
    end
 
    def add(status)
@@ -292,7 +255,7 @@ class Git
          all_files, e = @cmd.run("git status -s")
 
       rescue 
-         puts prompt(STATUS, @config["exit"]["not_a_repo"])
+         puts prompt(EXIT, @config["exit"]["not_a_repo"])
          exit(false)
       end
 
@@ -310,16 +273,15 @@ class Git
       return status
    end
 
-   def push
+   def push(status)
       begin 
          run_command("git push")
       rescue 
-         current_branch, err = @cmd.run("git branch --show-current")
-         run_command("git push --set-upstream origin #{current_branch}")
+         run_command("git push --set-upstream origin #{status.branch_name}")
       end
    end
 
-   def prompt(heading, prompt, err=false)
+   def prompt(heading, prompt)
       if heading.length >= HEADING_LEN - 1
          heading = heading[0, HEADING_LEN - 3] + "."
       end
@@ -327,11 +289,28 @@ class Git
       dashes_right = "-" * ((HEADING_LEN-heading.length) / 2)
       dashes_left = "-" * (HEADING_LEN-(heading.length+dashes_right.length))
 
-      if err
-         return "\n[#{dashes_left}#{@p.red(ERROR)}#{dashes_right}] #{@p.bold(prompt)}"
+      if @print_commands 
+         if heading.eql? ERROR
+            heading_prnt = "\n[#{dashes_left}#{@p.red(ERROR)}#{dashes_right}]"
+         elsif heading.eql? EXIT
+            heading_prnt = "\n[#{dashes_left}#{@p.bright_blue(EXIT)}#{dashes_right}]"
+         else 
+            heading_prnt = "\n[#{dashes_left}#{@p.cyan(heading)}#{dashes_right}]"
+         end
+      else
+         if heading.eql? ERROR
+            heading_prnt = "#{@p.red.bold("!")}"
+         elsif heading.eql? DEBUG
+            heading_prnt = "#{@p.magenta.bold("$")}"
+         elsif heading.eql? EXIT
+            heading_prnt = "#{@p.bright_blue.bold("!")}"
+         else
+            heading_prnt = "#{@p.green.bold("?")}"
+         end 
       end
+
+      return "\n#{heading_prnt} #{@p.bold(prompt)}"
       
-      return "\n[#{dashes_left}#{@p.blue(heading)}#{dashes_right}] #{@p.bold(prompt)}"
    end
 end
 
@@ -340,7 +319,7 @@ def main
    status = git.status_and_branch_name()
    git.add(status)
    git.commit()
-   git.push()
+   git.push(status)
 end 
 
 main()
