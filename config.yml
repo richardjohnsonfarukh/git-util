@@ -5,7 +5,6 @@ commit:
   max_message_length: 100
   scope_length: 15
   co_authoring_file: co-authors.yml
-  emojis: true
   types:
     - name: feat
       description: A new feature
