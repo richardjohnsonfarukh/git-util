@@ -6,7 +6,7 @@ ZSHRC=~/.zshrc
 DIRNAME="$( dirname "${BASH_SOURCE[0]}" &> /dev/null && pwd )"
 
 function add_alias {
-   echo "alias acp=$DIRNAME/script.rb" >> $1
+   printf "\nalias acp=$DIRNAME/script.rb\n" >> $1
    echo "export GEM_HOME=\"$HOME/.gem\"" >> $1
    echo  "---" >> "$DIRNAME/co-authors.yml"
    source $1
