@@ -52,4 +52,3 @@ exit:
     no_files_selected: No files selected for staging area - exiting script
     no_files_to_commit: No modified files, nothing to commit - exiting script
     commit_error: "Unexpected error while trying to perform: \n  %s"
-  

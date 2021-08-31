@@ -5,7 +5,8 @@ This project has the following goals:
 
 1. Circumvent copy and pasting file names that you want to add to the staging area
 2. Keep a convention for commit messages
-3. Automatically set your upstream to have the same name as your current branch if your push fails
+3. Easily add co-authors you have previously worked with
+4. Automatically push and set your upstream to have the same name as your current branch if your push fails
 
 ## Prerequisites
 
