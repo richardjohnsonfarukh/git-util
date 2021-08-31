@@ -95,7 +95,7 @@ class Git
       unstaged, added = status.get_all_files()
 
       if (added.length + unstaged.length) == 0
-         prompt(EXIT, @config["exit"]["no_files_to_commit"])
+         puts prompt(EXIT, @config["exit"]["no_files_to_commit"])
          exit(true)
       end
       
@@ -271,7 +271,7 @@ class Git
       end
 
       co_authors << { "name" => name, "email" => email }
-      
+
       File.open(__dir__ + "/" + @config["commit"]["co_authoring_file"], "w") do |file|
          file.write(co_authors.to_yaml)
       end
