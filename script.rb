@@ -137,7 +137,7 @@ class Git
       end
 
       use_co_author = @prompt.yes?(prompt(COMMIT, @config["message"]["co_author_yes_no"]))
-
+ 
       if use_co_author
          commit_co_author = nil
          co_authors, co_authors_config = co_author_hash()
@@ -217,6 +217,10 @@ class Git
 
       co_authors = YAML.load(File.read(__dir__ + "/" +  @config["commit"]["co_authoring_file"]))
       co_authors_hash = Hash.new
+
+      unless co_authors
+         return co_authors_hash, Array.new
+      end
 
       co_authors.each do |auth| 
          co_authors_hash["#{auth["name"]} (#{auth["email"]})"] = "Co-authored-by: #{auth["name"]} <#{auth["email"]}>"
