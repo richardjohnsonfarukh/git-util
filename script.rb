@@ -148,13 +148,17 @@ class Git
       commit_types = commit_type_hash()
       commit_type = @prompt.select(prompt(COMMIT, @config["message"]["change_type"]), commit_types, cycle: true, filter: true)
 
-      commit_scope = @prompt.ask(prompt(COMMIT, @config["message"]["scope"])) do |q|
-         q.validate(/^.{0,#{@config["commit"]["scope_length"]}}$/,
-             "Length can't be more than #{@config["commit"]["scope_length"]} characters")
-         q.convert -> (i) do
-            i.strip!
-            return i
+      if @config["commit"]["scope"] 
+         commit_scope = @prompt.ask(prompt(COMMIT, @config["message"]["scope"])) do |q|
+            q.validate(/^.{0,#{@config["commit"]["scope_length"]}}$/,
+               "Length can't be more than #{@config["commit"]["scope_length"]} characters")
+            q.convert -> (i) do
+               i.strip!
+               return i
+            end
          end
+      else
+         commit_scope = ""
       end
 
       max_message_length = @config["commit"]["max_message_length"] - (commit_scope ? commit_scope.length : 0  + commit_type.length)
@@ -220,7 +224,7 @@ class Git
    def commit_type_hash()
       commit_type_hash = Hash.new
       @config["commit"]["types"].each do |type|
-         commit_type_hash[ "#{type["name"]}: #{type["description"]}" ] = type["name"]
+         commit_type_hash[ "%-8.8s : #{type["description"]}" % type["name"]] = type["name"]
       end
       
       return commit_type_hash
