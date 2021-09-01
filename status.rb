@@ -13,12 +13,18 @@ class Status
    def get_unstaged(unstaged_files)
       arr = Array.new
       unstaged_files = unstaged_files.split("\n")
+
       unstaged_files.each do |line|
-         arr << line.split[1]
+         # this is for renamed files which look like:
+         # R name -> new_name
+         unless line.split.length == 4
+            arr << line.split[1]
+         end
+
       end
 
       arr.delete_if do |file| 
-         @added_files.include? file
+         @added_files.include? file 
       end
       return arr
    end
