@@ -49,3 +49,23 @@ You can use the command as follows:
 - When prompted for a change scope or a commit message, on failure it deletes the message. You can use arrow up/down to go through your input history to bring your message back for editing
 
 - You can edit the feature types, message length, whether or not you want to use scope, and edit the prompt/error messages safely in the **config.yml**
+
+## Info
+
+Commands that will be executed in your terminal from the script are:
+
+`git restore --staged <files>`
+
+`git add <files>`
+
+`git status -s`
+
+`git commit -m <message>`
+
+`git diff --name-only --cached`
+
+`git branch --show-current`
+
+`git push`
+
+`git push --set-upstream origin <branch_name>`
