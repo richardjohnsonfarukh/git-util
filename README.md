@@ -31,9 +31,9 @@ This project has the following goals:
 
 ## Usage
 
-You can use the command as follows:
+You can use the command the following way:
 
-`$ acp [options]`
+- `$ acp [options]`
 
 | options           | function                                            |
 | ----------------- | --------------------------------------------------- |
@@ -54,18 +54,13 @@ You can use the command as follows:
 
 Commands that will be executed in your terminal from the script are:
 
-`git restore --staged <files>`
-
-`git add <files>`
-
-`git status -s`
-
-`git commit -m <message>`
-
-`git diff --name-only --cached`
-
-`git branch --show-current`
-
-`git push`
-
-`git push --set-upstream origin <branch_name>`
+| command                                        | usage                                                                            |
+| ---------------------------------------------- | -------------------------------------------------------------------------------- |
+| `git restore --staged <files>`                 | restores staged files                                                            |
+| `git add <files>`                              | adds selected files for staging                                                  |
+| `git status -s`                                | gets all files from git (untracked, staged, modified, renamed..)                 |
+| `git diff --name-only --cached`                | gets only the changed tracked files                                              |
+| `git commit -m <message>`                      | commits with a given message                                                     |
+| `git branch --show-current`                    | gets the current branch                                                          |
+| `git push`                                     | pushes to repository                                                             |
+| `git push --set-upstream origin <branch_name>` | if pushing fails, sets the upstream to  have the same name as the current branch |
