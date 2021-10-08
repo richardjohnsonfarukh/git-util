@@ -1,6 +1,9 @@
 --- 
 commit:
   scope: true
+  refs: true
+  refs_types: ["Refs", "Fixes", "Closes"]
+  refs_text: "sky-uk/ovp-stratos#"
   min_message_length: 5
   max_message_length: 100
   scope_length: 15
@@ -32,6 +35,8 @@ message:
     change_type: "Select change type:"
     scope: "What is the scope of this change? (enter to skip)"
     commit_message: "Enter a commit message: (max %d chars)"
+    refs_num: "Enter a reference to your ticket [ %s ] (enter to skip):"
+    refs_type: "What is the type of reference?"
     co_author_yes_no: "Would you like to add a co-author"
     co_author: "Who is your co-author?"
     co_author_name: "What is your co-author's name?"
@@ -41,3 +46,4 @@ exit:
     no_files_selected: No files selected for staging area - exiting script
     no_files_to_commit: No modified files, nothing to commit - exiting script
     commit_error: "Unexpected error while trying to perform: \n  %s"
+    push_error: Could not push to remote, check your permissions - exiting script

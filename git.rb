@@ -109,6 +109,7 @@ class Git
       commit_types = commit_type_hash()
       commit_type = @prompt.select(prompt(COMMIT, @config["message"]["change_type"]), commit_types, cycle: true, filter: true)
 
+      # Ask about the scope of the message, if empty then skip
       if @config["commit"]["scope"] 
          commit_scope = @prompt.ask(prompt(COMMIT, @config["message"]["scope"])) do |q|
             q.validate(/^.{0,#{@config["commit"]["scope_length"]}}$/,
@@ -134,8 +135,25 @@ class Git
          end
       end
 
+      # Ask about the ticket reference in Github / Jira. If not enabled in config or empty, then skip
+      if @config["commit"]["refs"]
+         refs_types = @config["commit"]["refs_types"]
+         refs_text = @config["commit"]["refs_text"]
+
+         reference_text = @config["message"]["refs_num"] % "#{@p.blue(refs_text + "<refs>")}"
+         refs_num = @prompt.ask(prompt(COMMIT, reference_text)) do |q|
+            q.validate(/^[0-9]+/)
+         end
+         
+         if refs_num
+            refs_type = @prompt.select(prompt(COMMIT, @config["message"]["refs_type"]), refs_types, cycle: true, filter: true)
+            refs = get_refs(refs_num, refs_type)
+         end
+      end
+
       use_co_author = @prompt.yes?(prompt(COMMIT, @config["message"]["co_author_yes_no"]))
  
+      # Ask about the co-author if the answer to the above is yes
       if use_co_author
          commit_co_author = nil
          co_authors, co_authors_config = co_author_hash()
@@ -151,7 +169,7 @@ class Git
          end 
       end
 
-      git_commit = build_commit(commit_type, commit_scope, commit_msg, commit_co_author)
+      git_commit = build_commit(commit_type, commit_scope, commit_msg, commit_co_author, refs)
 
       begin
          run_command(git_commit)
@@ -161,17 +179,22 @@ class Git
       end 
    end
 
-   def build_commit(type, scope, msg, co_author)
-      msg = process_msg_or_scope(msg)
-      scope = process_msg_or_scope(scope, isScope: true)
+   def get_refs(refs_num, refs_type)
+      return "#{refs_type}: #{@config["commit"]["refs_text"]}#{refs_num}\n"
+   end
 
-      if co_author
-         co_author = co_author.prepend("\n\n")
-      else
-         co_author = ""
+   def build_commit(type, scope, msg, co_author, refs)
+      msg = process_msg_or_scope(msg)
+      scope = process_msg_or_scope(scope, is_scope: true)
+
+      if co_author or refs
+         msg.concat("\n\n")
       end
 
-      return "git commit -m \"#{type}#{scope}: #{msg}#{co_author}\""
+      co_author = "" if co_author.empty? or not co_author
+      refs = "" if refs.empty? or not refs
+
+      return "git commit -m \"#{type}#{scope}: #{msg}#{refs}#{co_author}\""
    end
 
    def run_command(command)
@@ -191,8 +214,8 @@ class Git
       return commit_type_hash
    end
 
-   def process_msg_or_scope(str, isScope: false)
-      if isScope and (!str or str == "")
+   def process_msg_or_scope(str, is_scope: false)
+      if is_scope and (!str or str == "")
          return ""
       end
 
@@ -200,7 +223,7 @@ class Git
          str = str[0..-2]
       end
 
-      if isScope
+      if is_scope
          str = "(#{str})"
       end
 
@@ -279,7 +302,12 @@ class Git
       begin 
          run_command("git push")
       rescue 
-         run_command("git push --set-upstream origin #{status.branch_name}")
+         begin 
+            run_command("git push --set-upstream origin #{status.branch_name}")
+         rescue
+            puts prompt(ERROR, @config["exit"]["push_error"])
+            exit(false)
+         end
       end
    end
 
