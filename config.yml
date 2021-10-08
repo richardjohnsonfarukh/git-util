@@ -35,7 +35,7 @@ message:
     change_type: "Select change type:"
     scope: "What is the scope of this change? (enter to skip)"
     commit_message: "Enter a commit message: (max %d chars)"
-    refs_num: "Enter a reference to your ticket [ %s ] (enter to skip):"
+    refs_num: "Enter a reference to your ticket %s (enter to skip):"
     refs_type: "What is the type of reference?"
     co_author_yes_no: "Would you like to add a co-author"
     co_author: "Who is your co-author?"
