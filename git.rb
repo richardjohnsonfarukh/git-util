@@ -140,7 +140,7 @@ class Git
          refs_types = @config["commit"]["refs_types"]
          refs_text = @config["commit"]["refs_text"]
 
-         reference_text = @config["message"]["refs_num"] % "#{@p.blue(refs_text)}#{@p.cyan("<refs>")}"
+         reference_text = @config["message"]["refs_num"] % "#{@p.blue(refs_text)}#{@p.green.bold("<refs>")}"
          refs_num = @prompt.ask(prompt(COMMIT, reference_text)) do |q|
             q.validate(/^[0-9]*/)
          end
@@ -336,6 +336,8 @@ class Git
             heading_prnt = "#{@p.magenta.bold("$")}"
          elsif heading.eql? EXIT
             heading_prnt = "#{@p.bright_blue.bold("!")}"
+         elsif heading.eql? PUSH
+            heading_prnt = "#{@p.green.bold("!")}"
          else
             heading_prnt = "#{@p.green.bold("?")}"
          end 
