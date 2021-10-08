@@ -140,9 +140,9 @@ class Git
          refs_types = @config["commit"]["refs_types"]
          refs_text = @config["commit"]["refs_text"]
 
-         reference_text = @config["message"]["refs_num"] % "#{@p.blue(refs_text + "<refs>")}"
+         reference_text = @config["message"]["refs_num"] % "#{@p.blue(refs_text)}#{@p.cyan("<refs>")}"
          refs_num = @prompt.ask(prompt(COMMIT, reference_text)) do |q|
-            q.validate(/^[0-9]+/)
+            q.validate(/^[0-9]*/)
          end
          
          if refs_num
@@ -191,8 +191,8 @@ class Git
          msg.concat("\n\n")
       end
 
-      co_author = "" if co_author.empty? or not co_author
-      refs = "" if refs.empty? or not refs
+      co_author = "" unless co_author and not co_author.empty? 
+      refs = "" unless refs and not refs.empty? 
 
       return "git commit -m \"#{type}#{scope}: #{msg}#{refs}#{co_author}\""
    end
@@ -309,6 +309,8 @@ class Git
             exit(false)
          end
       end
+
+      puts prompt(PUSH, @config["exit"]["push_successful"])
    end
 
    def prompt(heading, prompt)

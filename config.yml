@@ -47,3 +47,4 @@ exit:
     no_files_to_commit: No modified files, nothing to commit - exiting script
     commit_error: "Unexpected error while trying to perform: \n  %s"
     push_error: Could not push to remote, check your permissions - exiting script
+    push_successful: Successfully pushed to remote.
