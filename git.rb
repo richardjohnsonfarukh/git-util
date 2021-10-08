@@ -55,7 +55,7 @@ class Git
    def add(status)
       unstaged, added = status.get_all_files()
 
-      if (added.length + unstaged.length) == 0
+      if (added.length + unstaged.length) == 0 and not @debug_mode
          puts prompt(EXIT, @config["exit"]["no_files_to_commit"])
          exit(true)
       end
@@ -151,22 +151,25 @@ class Git
          end
       end
 
-      use_co_author = @prompt.yes?(prompt(COMMIT, @config["message"]["co_author_yes_no"]))
+      # If co-authoring is enabled in the config
+      if @config["commit"]["co_authoring"]
+         use_co_author = @prompt.yes?(prompt(COMMIT, @config["message"]["co_author_yes_no"]))
  
-      # Ask about the co-author if the answer to the above is yes
-      if use_co_author
-         commit_co_author = nil
-         co_authors, co_authors_config = co_author_hash()
+         # Ask about the co-author if the answer to the above is yes
+         if use_co_author
+            commit_co_author = nil
+            co_authors, co_authors_config = co_author_hash()
 
-         unless co_authors.empty?
-            commit_co_author = @prompt.select(prompt(COMMIT, @config["message"]["co_author"]), co_authors, cycle: true, filter: true)
+            unless co_authors.empty?
+               commit_co_author = @prompt.select(prompt(COMMIT, @config["message"]["co_author"]), co_authors, cycle: true, filter: true)
 
-            if commit_co_author == OTHER_CO_AUTHOR 
+               if commit_co_author == OTHER_CO_AUTHOR 
+                  commit_co_author = add_co_author(co_authors_config)
+               end
+            else 
                commit_co_author = add_co_author(co_authors_config)
-            end
-         else 
-            commit_co_author = add_co_author(co_authors_config)
-         end 
+            end 
+         end
       end
 
       git_commit = build_commit(commit_type, commit_scope, commit_msg, commit_co_author, refs)
@@ -310,7 +313,9 @@ class Git
          end
       end
 
-      puts prompt(PUSH, @config["exit"]["push_successful"])
+      unless @debug_mode
+         puts prompt(PUSH, @config["exit"]["push_successful"])
+      end
    end
 
    def prompt(heading, prompt)

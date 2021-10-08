@@ -2,6 +2,7 @@
 commit:
   scope: true
   refs: true
+  co_authoring: true
   refs_types: ["Refs", "Fixes", "Closes"]
   refs_text: "sky-uk/ovp-stratos#"
   min_message_length: 5
