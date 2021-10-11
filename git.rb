@@ -55,7 +55,7 @@ class Git
    def add(status)
       unstaged, added = status.get_all_files()
 
-      if (added.length + unstaged.length) == 0 and not @debug_mode
+      if (added.length + unstaged.length) == 0
          puts prompt(EXIT, @config["exit"]["no_files_to_commit"])
          exit(true)
       end
