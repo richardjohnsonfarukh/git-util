@@ -109,7 +109,7 @@ class Git
       commit_types = commit_type_hash()
       commit_type = @prompt.select(prompt(COMMIT, @config["message"]["change_type"]), commit_types, cycle: true, filter: true)
 
-      # Ask about the scope of the message, if empty then skip
+      # Ask about the scope of the commit, if empty then skip
       if @config["commit"]["scope"] 
          commit_scope = @prompt.ask(prompt(COMMIT, @config["message"]["scope"])) do |q|
             q.validate(/^.{0,#{@config["commit"]["scope_length"]}}$/,
@@ -125,6 +125,7 @@ class Git
 
       max_message_length = @config["commit"]["max_message_length"] - (commit_scope ? commit_scope.length : 0  + commit_type.length)
 
+      # Ask about the commit message with a minimum length
       commit_msg = @prompt.ask(prompt(COMMIT, @config["message"]["commit_message"] % max_message_length)) do |q|
          q.validate(/^.{#{@config["commit"]["min_message_length"]},#{max_message_length}}$/,
             "Length has to be more than #{@config["commit"]["min_message_length"]} and less than #{max_message_length} characters")
@@ -133,6 +134,31 @@ class Git
             i.strip!
             return i
          end
+      end
+
+      # Ask about a description message which will be styled as bullet points
+      if @config["commit"]["description"] and @config["commit"]["max_description_length"] > 0
+         description_lines = Array.new
+         remaining_lines = @config["commit"]["max_description_length"]
+
+         while remaining_lines > 0
+            remaining_lines_color = @p.green.bold(remaining_lines)
+            description_line = @prompt.ask(prompt(COMMIT, @config["message"]["description_message"] % remaining_lines_color)) do |q|
+               q.convert -> (i) do
+                  i.strip!
+                  return i
+               end
+            end
+
+            if description_line
+               description_lines << description_line
+               remaining_lines -= 1
+            else
+               remaining_lines = 0
+            end
+         end
+         
+         description = get_description(description_lines)
       end
 
       # Ask about the ticket reference in Github / Jira. If not enabled in config or empty, then skip
@@ -146,8 +172,12 @@ class Git
          end
          
          if refs_num
-            refs_type = @prompt.select(prompt(COMMIT, @config["message"]["refs_type"]), refs_types, cycle: true, filter: true)
-            refs = get_refs(refs_num, refs_type)
+            if refs_types.length() > 1
+               refs_type = @prompt.select(prompt(COMMIT, @config["message"]["refs_type"]), refs_types, cycle: true, filter: true)
+               refs = get_refs(refs_num, refs_type)
+            else
+               refs = get_refs(refs_num, refs_types[0])
+            end
          end
       end
 
@@ -172,7 +202,7 @@ class Git
          end
       end
 
-      git_commit = build_commit(commit_type, commit_scope, commit_msg, commit_co_author, refs)
+      git_commit = build_commit(commit_type, commit_scope, commit_msg, description, commit_co_author, refs)
 
       begin
          run_command(git_commit)
@@ -182,22 +212,33 @@ class Git
       end 
    end
 
+   def get_description(description_lines)
+      return "" if description_lines.empty?
+      description = "\n"
+
+      description_lines.each do |l|
+         description.concat("\n- #{l}")
+      end
+
+      return description
+   end
+
    def get_refs(refs_num, refs_type)
       return "#{refs_type}: #{@config["commit"]["refs_text"]}#{refs_num}\n"
    end
 
-   def build_commit(type, scope, msg, co_author, refs)
+   def build_commit(type, scope, msg, desc, co_author, refs)
       msg = process_msg_or_scope(msg)
       scope = process_msg_or_scope(scope, is_scope: true)
 
       if co_author or refs
-         msg.concat("\n\n")
+         desc.concat("\n\n")
       end
 
       co_author = "" unless co_author and not co_author.empty? 
       refs = "" unless refs and not refs.empty? 
 
-      return "git commit -m \"#{type}#{scope}: #{msg}#{refs}#{co_author}\""
+      return "git commit -m \"#{type}#{scope}: #{msg}#{desc}#{refs}#{co_author}\""
    end
 
    def run_command(command)

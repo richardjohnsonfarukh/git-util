@@ -3,10 +3,12 @@ commit:
   scope: true
   refs: true
   co_authoring: true
+  description: true
   refs_types: ["Refs", "Fixes", "Closes"]
   refs_text: "sky-uk/ovp-stratos#"
   min_message_length: 5
   max_message_length: 100
+  max_description_length: 5
   scope_length: 15
   co_authoring_file: co-authors.yml
   types:
@@ -36,6 +38,7 @@ message:
     change_type: "Select change type:"
     scope: "What is the scope of this change? (enter to skip)"
     commit_message: "Enter a commit message: (max %d chars)"
+    description_message: "Enter extra details - %s lines remaining (enter to finish):"
     refs_num: "Enter a reference to your ticket %s (enter to skip):"
     refs_type: "What is the type of reference?"
     co_author_yes_no: "Would you like to add a co-author"
