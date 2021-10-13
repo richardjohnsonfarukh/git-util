@@ -5,7 +5,7 @@ commit:
   co_authoring: true
   description: true
   refs_types: ["Refs", "Fixes", "Closes"]
-  refs_text: "sky-uk/ovp-stratos#"
+  refs_text: "<your-team>-"
   min_message_length: 5
   max_message_length: 100
   max_description_length: 5
