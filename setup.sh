@@ -15,6 +15,10 @@ function add_alias {
    exit 0;
 }
 
+function app_setup {
+   cp $DIRNAME/config_template.yml $DIRNAME/config.yml
+}
+
 if [[ -f $ZSHRC ]]; then 
    add_alias $ZSHRC;
 elif [[ -f $BASH_PROFILE ]]; then
