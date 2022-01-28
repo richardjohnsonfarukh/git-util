@@ -196,7 +196,10 @@ class Git
 
       unless @debug_mode
          @printer.push(@config["exit"]["push_successful"])
-         @printer.push(@config["exit"]["raise_pr"] % @p.bold.blue(get_repo_link()))
+         
+         unless ["main", "master"].include? status.branch_name
+            @printer.push(@config["exit"]["raise_pr"] % @p.bold.blue(get_repo_link()))
+         end
       end
 
    end
