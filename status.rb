@@ -4,7 +4,7 @@ class Status
    attr_reader :unstaged_files
 
    def initialize(unstaged_files, added_files, branch_name)
-      @branch_name = branch_name
+      @branch_name = branch_name.strip
       @added_files = get_added(added_files)
       @unstaged_files = get_unstaged(unstaged_files)
    end
