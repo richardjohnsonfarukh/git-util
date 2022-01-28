@@ -16,7 +16,7 @@ function add_alias {
 }
 
 function app_setup {
-   cp $DIRNAME/config_template.yml $DIRNAME/config.yml
+   cp $DIRNAME/src/config/config_template.yml $DIRNAME/src/config/config.yml
 }
 
 if [[ -f $ZSHRC ]]; then 
