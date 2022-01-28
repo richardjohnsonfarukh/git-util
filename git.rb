@@ -139,7 +139,7 @@ class Git
       if @debug_mode
          @printer.debug(@p.yellow(command))
       else
-         @cmd.run(command)
+         return @cmd.run(command)
       end
    end
 
@@ -196,6 +196,13 @@ class Git
 
       unless @debug_mode
          @printer.push(@config["exit"]["push_successful"])
+         @printer.push(@config["exit"]["raise_pr"] % @p.bold.blue(get_repo_link()))
       end
+
+   end
+
+   def get_repo_link
+      repo_url, e = @cmd.run("git config --get remote.origin.url")
+      return "#{repo_url.strip.chomp(".git")}/pull/new/#{status.branch_name}"
    end
 end
