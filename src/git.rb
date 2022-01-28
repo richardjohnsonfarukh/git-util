@@ -14,7 +14,7 @@ class Git
       @debug_mode = false
       
       begin 
-         @config = YAML.load(File.read(__dir__ + "/" + CONFIG_FILE_NAME))
+         @config = YAML.load(File.read(__dir__ + "/config/" + CONFIG_FILE_NAME))
       rescue 
          @printer.error("No suitable config file \"#{CONFIG_FILE_NAME}\" has been found - exiting script")
          exit(false)
@@ -35,10 +35,11 @@ class Git
          parser.on("-r", "--ref REFS_TEXT", "overwrite the reference string with an argument") do |arg|
             @config["commit"]["refs_text"] = arg
          end
-         parser.on("-s", "--simple", "run without scope, description or co-author") do |arg|
+         parser.on("-s", "--simple", "run without scope, description, refs or co-author") do |arg|
             @config["commit"]["co_authoring"] = false
             @config["commit"]["description"] = false
             @config["commit"]["scope"] = false
+            @config["commit"]["refs"] = false
          end
          parser.on("-h", "--help", "prints this help") do
             puts parser

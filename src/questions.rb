@@ -62,10 +62,11 @@ class Questions
       return ""
    end
 
+   # Ask about a description message which will be styled as bullet points
    def get_description
-      # Ask about a description message which will be styled as bullet points
+      description_lines = Array.new
+
       if @config["commit"]["description"] and @config["commit"]["max_description_length"] > 0
-         description_lines = Array.new
          remaining_lines = @config["commit"]["max_description_length"]
 
          while remaining_lines > 0
@@ -152,8 +153,8 @@ class Questions
       end
 
       co_authors << { "name" => name, "email" => email }
-
-      File.open(__dir__ + "/" + @config["commit"]["co_authoring_file"], "w") do |file|
+      
+      File.open(__dir__ + "/config/" + @config["commit"]["co_authoring_file"], "w") do |file|
          file.write(co_authors.to_yaml)
       end
 
@@ -165,7 +166,7 @@ class Questions
          return Hash.new
       end
 
-      co_authors = YAML.load(File.read(__dir__ + "/" +  @config["commit"]["co_authoring_file"]))
+      co_authors = YAML.load(File.read(__dir__ + "/config/" +  @config["commit"]["co_authoring_file"]))
       co_authors_hash = Hash.new
 
       unless co_authors

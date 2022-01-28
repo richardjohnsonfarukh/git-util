@@ -3,13 +3,14 @@ require "tty-command"
 require 'yaml'
 require 'digest'
 
-CONFIG = __dir__ + "/config.yml"
-CO_AUTHORS = __dir__ + "/co-authors.yml"
-CHECKSUM_FILE = __dir__ + "/checksums.yml"
+CONFIG = __dir__ + "/config/config.yml"
+CONFIG_TEMPLATE = __dir__ + "/config/config_template.yml"
+CO_AUTHORS = __dir__ + "/config/co-authors.yml"
+CHECKSUM_FILE = __dir__ + "/config/checksums.yml"
 
 def copy_config()
    unless File.file?(CONFIG)
-      FileUtils.cp("config_template.yml", "config.yml")
+      FileUtils.cp(CONFIG_TEMPLATE, CONFIG)
    end
 end
 
