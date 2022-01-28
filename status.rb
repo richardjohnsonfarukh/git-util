@@ -4,7 +4,6 @@ class Status
    attr_reader :unstaged_files
 
    def initialize(unstaged_files, added_files, branch_name)
-
       @branch_name = branch_name
       @added_files = get_added(added_files)
       @unstaged_files = get_unstaged(unstaged_files)
@@ -15,8 +14,6 @@ class Status
       unstaged_files = unstaged_files.split("\n")
 
       unstaged_files.each do |line|
-         # this is for renamed files which look like:
-         # R name -> new_name
          unless line.split.length == 4
             arr << line.split[1]
          end
