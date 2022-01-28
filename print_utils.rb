@@ -31,7 +31,7 @@ class Printer
    def add_text(prompt)
       return text(PrintType::ADD, prompt)
    end
-   
+
    def push(prompt)
       puts text(PrintType::PUSH, prompt)
    end
@@ -79,5 +79,4 @@ class Printer
       end
       return "\n#{heading_prnt} #{@p.bold(prompt)}"
    end
-
 end

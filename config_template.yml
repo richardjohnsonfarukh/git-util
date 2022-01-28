@@ -2,8 +2,10 @@
 commit:
   scope: true
   refs: true
+  type: true
   co_authoring: true
   description: true
+  multi_co_authoring: false
   refs_types: ["Refs", "Fixes", "Closes"]
   refs_text: "<your-team>-"
   min_message_length: 5
@@ -52,3 +54,4 @@ exit:
     commit_error: "Unexpected error while trying to perform: \n  %s"
     push_error: Could not push to remote, check your permissions - exiting script
     push_successful: Successfully pushed to remote.
+    raise_pr: Raise a pull request on %s

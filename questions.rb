@@ -14,7 +14,7 @@ class Questions
    end
 
    def get_files_to_stage(added, unstaged)
-      return @prompt.multi_select(@printer.add_text(@config["message"]["select_files"]), unstaged + added, cycle: true, echo: false) do |menu|
+      return @prompt.multi_select(@printer.add_text(@config["message"]["select_files"]), unstaged + added, cycle: true, echo: false, filter: true) do |menu|
          unless added.empty?
             menu.default *added
          end

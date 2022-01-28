@@ -22,22 +22,37 @@ class Git
       
       OptionParser.new do |parser|
          parser.banner = "Usage:" + __FILE__ + " [options]"
-         parser.on("-a", "--all", "add all files in directory to staging") do |arg|
+         parser.on("-a", "--all", "add all files in directory to staging") do 
             @add_all = true
          end
-         parser.on("-v", "--verbose", "print command executions") do |arg|
+         parser.on("-v", "--verbose", "print command executions") do
             @print_commands = true
             @cmd = TTY::Command.new
          end
          parser.on("-d", "--debug", "debug mode - commands don't execute") do
             @debug_mode = true
          end
+         parser.on("-r", "--ref REFS_TEXT", "overwrite the reference string with an argument") do |arg|
+            @config["commit"]["refs_text"] = arg
+         end
+         parser.on("-s", "--simple", "run without scope, description or co-author") do |arg|
+            @config["commit"]["co_authoring"] = false
+            @config["commit"]["description"] = false
+            @config["commit"]["scope"] = false
+         end
          parser.on("-h", "--help", "prints this help") do
             puts parser
             exit(true)
          end
-      end.parse!
-      
+
+         begin
+            parser.parse!
+         rescue OptionParser::MissingArgument => e
+            puts parser
+            exit(false)
+         end
+      end
+
       @printer = Printer.new(@print_commands, @p)
       @questions = Questions.new(@config, @printer, @p)
    end

@@ -78,8 +78,14 @@ commit:
   # enable/disable refs question
   refs: true
 
+  # enable/disable type question
+  type: true
+
   # enable/disable co-authoring question
   co_authoring: true
+
+  # enable/disable multi co-authoring (future development)
+  multi_co_authoring: false
 
   # enable/disable extended description question
   description: true
@@ -157,6 +163,8 @@ exit:
     commit_error: "Unexpected error while trying to perform: \n  %s"
     push_error: Could not push to remote, check your permissions - exiting script
     push_successful: Successfully pushed to remote.
+    # %s is the link to create a pull request for the current branch
+    raise_pr: Raise a pull request on %s
 
 ```
 ## Info
