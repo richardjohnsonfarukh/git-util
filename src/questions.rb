@@ -22,14 +22,12 @@ class Questions
    end
 
    def get_commit_type
-      if @config["commit"]["type"]
-         commit_types = Hash.new
-         @config["commit"]["types"].each do |type|
-            commit_types[ "%-8.8s : #{type["description"]}" % type["name"]] = type["name"]
-         end
-
-         return @prompt.select(@printer.text(PrintType::COMMIT, @config["message"]["change_type"]), commit_types, cycle: true, filter: true)
+      commit_types = Hash.new
+      @config["commit"]["types"].each do |type|
+         commit_types[ "%-8.8s : #{type["description"]}" % type["name"]] = type["name"]
       end
+
+      return @prompt.select(@printer.text(PrintType::COMMIT, @config["message"]["change_type"]), commit_types, cycle: true, filter: true)
    end 
 
    # Ask about the commit message with a minimum length
@@ -49,41 +47,35 @@ class Questions
 
    # Ask about the scope of the commit, if empty then skip
    def get_scope
-      if @config["commit"]["scope"] 
-         return @prompt.ask(@printer.text(PrintType::COMMIT, @config["message"]["scope"])) do |q|
-            q.validate(/^.{0,#{@config["commit"]["scope_length"]}}$/,
-               "Length can't be more than #{@config["commit"]["scope_length"]} characters")
-            q.convert -> (i) do
-               i.strip!
-               return i
-            end
+      return @prompt.ask(@printer.text(PrintType::COMMIT, @config["message"]["scope"])) do |q|
+         q.validate(/^.{0,#{@config["commit"]["scope_length"]}}$/,
+            "Length can't be more than #{@config["commit"]["scope_length"]} characters")
+         q.convert -> (i) do
+            i.strip!
+            return i
          end
       end
-      return ""
    end
 
    # Ask about a description message which will be styled as bullet points
    def get_description
       description_lines = Array.new
+      remaining_lines = @config["commit"]["max_description_length"]
 
-      if @config["commit"]["description"] and @config["commit"]["max_description_length"] > 0
-         remaining_lines = @config["commit"]["max_description_length"]
-
-         while remaining_lines > 0
-            remaining_lines_color = @p.green.bold(remaining_lines)
-            description_line = @prompt.ask(@printer.text(PrintType::COMMIT, @config["message"]["description_message"] % remaining_lines_color)) do |q|
-               q.convert -> (i) do
-                  i.strip!
-                  return i
-               end
+      while remaining_lines > 0
+         remaining_lines_color = @p.green.bold(remaining_lines)
+         description_line = @prompt.ask(@printer.text(PrintType::COMMIT, @config["message"]["description_message"] % remaining_lines_color)) do |q|
+            q.convert -> (i) do
+               i.strip!
+               return i
             end
+         end
 
-            if description_line
-               description_lines << description_line
-               remaining_lines -= 1
-            else
-               remaining_lines = 0
-            end
+         if description_line
+            description_lines << description_line
+            remaining_lines -= 1
+         else
+            remaining_lines = 0
          end
       end
 
@@ -92,54 +84,60 @@ class Questions
 
    # Ask about the ticket reference in Github / Jira. If not enabled in config or empty, then skip
    def get_refs
-      if @config["commit"]["refs"]
-         refs_types = @config["commit"]["refs_types"]
-         refs_text = @config["commit"]["refs_text"]
+      refs_types = @config["commit"]["refs_types"]
+      refs_text = @config["commit"]["refs_text"]
 
-         reference_text = @config["message"]["refs_num"] % "#{@p.blue(refs_text)}#{@p.green.bold("<refs>")}"
-         refs_num = @prompt.ask(@printer.text(PrintType::COMMIT, reference_text)) do |q|
-            q.validate(/^[0-9]*/)
+      reference_text = @config["message"]["refs_num"] % "#{@p.blue(refs_text)}#{@p.green.bold("<refs>")}"
+      refs_num = @prompt.ask(@printer.text(PrintType::COMMIT, reference_text)) do |q|
+         q.validate(/^[0-9]*/)
+      end
+      
+      if refs_num
+         if refs_types.length() > 1
+            refs_type = @prompt.select(@printer.text(PrintType::COMMIT, @config["message"]["refs_type"]), refs_types, cycle: true, filter: true)
+         else
+            refs_type = refs_num, refs_types[0]
          end
-         
-         if refs_num
-            if refs_types.length() > 1
-               refs_type = @prompt.select(@printer.text(PrintType::COMMIT, @config["message"]["refs_type"]), refs_types, cycle: true, filter: true)
-               refs = get_refs_text(refs_num, refs_type)
-            else
-               refs = get_refs_text(refs_num, refs_types[0])
+      end
+
+      # to be refactored to return the refs type and text
+      return refs_type, @config["commit"]["refs_text"], refs_num
+   end
+
+   # If co-authoring is enabled in the config, ask about the co-author 
+   def get_co_author
+      use_co_author = @prompt.yes?(@printer.text(PrintType::COMMIT, @config["message"]["co_author_yes_no"]))
+      return Array.new unless use_co_author
+
+      co_authors, co_authors_config = co_author_hash()
+
+      unless co_authors.empty?
+         commit_co_author = @prompt.select(@printer.text(PrintType::COMMIT, @config["message"]["co_author"]), co_authors, cycle: true, filter: true)
+
+         if commit_co_author == OTHER_CO_AUTHOR 
+            commit_co_author = add_co_author(co_authors_config)
+         end
+      else 
+         commit_co_author = add_co_author(co_authors_config)
+      end 
+
+      return [commit_co_author]
+   end
+
+   def get_multi_co_authors
+      if use_co_author
+         co_authors, co_authors_config = co_author_hash()
+
+         unless co_authors.empty?
+            commit_co_authors = @prompt.multi_select(@printer.text(PrintType::COMMIT, @config["message"]["multi_co_authors"]), co_authors, cycle: true, filter: true)
+
+            if commit_co_authors.include? OTHER_CO_AUTHOR 
+               commit_co_authors << add_co_author(co_authors_config)
             end
          end
       end
 
-      return refs
-   end
-
-   def get_refs_text(refs_num, refs_type)
-      return "#{refs_type}: #{@config["commit"]["refs_text"]}#{refs_num}\n"
-   end
-
-   # If co-authoring is enabled in the config, ask about the co-author if the answer
-   def get_co_author
-      if @config["commit"]["co_authoring"]
-         use_co_author = @prompt.yes?(@printer.text(PrintType::COMMIT, @config["message"]["co_author_yes_no"]))
-   
-         if use_co_author
-            commit_co_author = nil
-            co_authors, co_authors_config = co_author_hash()
-
-            unless co_authors.empty?
-               commit_co_author = @prompt.select(@printer.text(PrintType::COMMIT, @config["message"]["co_author"]), co_authors, cycle: true, filter: true)
-
-               if commit_co_author == OTHER_CO_AUTHOR 
-                  commit_co_author = add_co_author(co_authors_config)
-               end
-            else 
-               commit_co_author = add_co_author(co_authors_config)
-            end 
-         end
-      end
-
-      return commit_co_author
+      return commit_co_authors
    end
 
    def add_co_author(co_authors)
@@ -158,7 +156,7 @@ class Questions
          file.write(co_authors.to_yaml)
       end
 
-      return "Co-authored-by: #{name} <#{email}>"
+      return "#{name} <#{email}>"
    end
 
    def co_author_hash()
@@ -174,7 +172,7 @@ class Questions
       end
 
       co_authors.each do |auth| 
-         co_authors_hash["#{auth["name"]} (#{auth["email"]})"] = "Co-authored-by: #{auth["name"]} <#{auth["email"]}>"
+         co_authors_hash["#{auth["name"]} (#{auth["email"]})"] = "#{auth["name"]} <#{auth["email"]}>"
       end
 
       co_authors_hash[OTHER_CO_AUTHOR] = OTHER_CO_AUTHOR

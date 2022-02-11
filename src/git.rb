@@ -5,6 +5,7 @@ class Git
    require "yaml"
    require_relative "status"
    require_relative "questions"
+   require_relative "commit"
    CONFIG_FILE_NAME = "config.yml"
    
    def initialize
@@ -12,17 +13,19 @@ class Git
       @p = Pastel.new
       @print_commands = false
       @debug_mode = false
-      
+      @commit_group = "default"
+      $printer = Printer.new(@print_commands, @p)
+
       begin 
          @config = YAML.load(File.read(__dir__ + "/config/" + CONFIG_FILE_NAME))
       rescue 
-         @printer.error("No suitable config file \"#{CONFIG_FILE_NAME}\" has been found - exiting script")
+         $printer.error("No suitable config file \"#{CONFIG_FILE_NAME}\" has been found - exiting script")
          exit(false)
       end
       
       OptionParser.new do |parser|
          parser.banner = "Usage:" + __FILE__ + " [options]"
-         parser.on("-a", "--all", "add all files in directory to staging") do 
+         parser.on("-a", "--all", "add all files in repository to staging") do 
             @add_all = true
          end
          parser.on("-v", "--verbose", "print command executions") do
@@ -36,10 +39,18 @@ class Git
             @config["commit"]["refs_text"] = arg
          end
          parser.on("-s", "--simple", "run without scope, description, refs or co-author") do |arg|
-            @config["commit"]["co_authoring"] = false
-            @config["commit"]["description"] = false
-            @config["commit"]["scope"] = false
-            @config["commit"]["refs"] = false
+            @commit_group = "simple"
+         end
+         parser.on("-f", "--full", "run with all possible questions") do |arg|
+            @commit_group = "full"
+         end
+         parser.on("-c", "--custom NAME", "run a select commit group by name") do |arg|
+            if @config["commit"]["commit_groups"].key?(arg)
+               @commit_group = @config["commit"]["commit_groups"][arg]
+            else
+               $printer.error("Custom group '#{arg}' not found. Please refer to the 'config.yml'")
+               exit(false)
+            end
          end
          parser.on("-h", "--help", "prints this help") do
             puts parser
@@ -54,8 +65,8 @@ class Git
          end
       end
 
-      @printer = Printer.new(@print_commands, @p)
-      @questions = Questions.new(@config, @printer, @p)
+      $printer = Printer.new(@print_commands, @p)
+      @questions = Questions.new(@config, $printer, @p)
    end
    
    def status
@@ -65,7 +76,7 @@ class Git
          end
          all_files, e = @cmd.run("git status -s")
       rescue 
-         @printer.exit(@config["exit"]["not_a_repo"])
+         $printer.exit(@config["exit"]["not_a_repo"])
          exit(false)
       end
 
@@ -76,7 +87,7 @@ class Git
       end
 
       unless status
-         @printer.exit(@config["exit"]["no_files_selected"])
+         $printer.exit(@config["exit"]["no_files_selected"])
          exit(true)
       end
       
@@ -87,14 +98,14 @@ class Git
       unstaged, added = status.get_all_files()
 
       if (added.length + unstaged.length) == 0
-         @printer.exit(@config["exit"]["no_files_to_commit"])
+         $printer.exit(@config["exit"]["no_files_to_commit"])
          exit(true)
       end
       
       unless @add_all
          files_to_stage = @questions.get_files_to_stage(added, unstaged)
       else
-         @printer.add(@config["message"]["staged_files"])
+         $printer.add(@config["message"]["staged_files"])
          added.each do |file|
             puts "  #{@p.green(file)}"
          end
@@ -114,7 +125,7 @@ class Git
       end 
 
       if files_to_stage.empty?
-         @printer.exit(@config["exit"]["no_files_selected"])
+         $printer.exit(@config["exit"]["no_files_selected"])
          exit(true)
       else
          run_command("git add #{files_to_stage.join(" ")}")
@@ -122,79 +133,27 @@ class Git
             puts "  #{@p.green(file)}"
          end
       end
-
    end
 
    def commit
-      type = @questions.get_commit_type
-      scope = @questions.get_scope
-      msg = @questions.get_commit_message(type, scope)
-      description = @questions.get_description
-      refs = @questions.get_refs
-      co_author = @questions.get_co_author
-
-      git_commit = build_commit(
-         type, 
-         scope, 
-         msg, 
-         description, 
-         co_author, 
-         refs
-      )
+      # TODO - make the config selectable instead of default
+      commit = Commit::new(@commit_group, @questions)
+      git_commit = commit.get_commit_message()
 
       begin
          run_command(git_commit)
       rescue
-         @printer.error(@config["exit"]["commit_error"] % @p.yellow.bold(git_commit))
+         $printer.error(@config["exit"]["commit_error"] % @p.yellow.bold(git_commit))
          exit(false)
       end 
    end
 
-   def process_description(description_array)
-      return "" if description_array.empty?
-      description = "\n"
-
-      description_array.each do |l|
-         description.concat("\n- #{l}")
-      end
-
-      return description
-   end
-
-   def build_commit(type, scope, msg, desc, co_author, refs)
-      msg = process_msg_or_scope(msg)
-      scope = process_msg_or_scope(scope, is_scope: true)
-      desc = process_description(desc)
-
-      if co_author or refs
-         desc.concat("\n\n")
-      end
-
-      co_author = "" unless co_author and not co_author.empty? 
-      refs = "" unless refs and not refs.empty? 
-
-      return "git commit -m \"#{type}#{scope}: #{msg}#{desc}#{refs}#{co_author}\""
-   end
-
    def run_command(command)
       if @debug_mode
-         @printer.debug(@p.yellow(command))
+         $printer.debug(@p.yellow(command))
       else
          return @cmd.run(command)
       end
-   end
-
-   def process_msg_or_scope(str, is_scope: false)
-      if is_scope and (!str or str == "")
-         return ""
-      end
-      if str and str[-1].match(/\.|!|\?/) and str.length > 2
-         str = str[0..-2]
-      end
-      
-      str = "(#{str})" if is_scope
-      
-      return str
    end
 
    def push(status)
@@ -204,16 +163,16 @@ class Git
          begin 
             run_command("git push --set-upstream origin #{status.branch_name}")
          rescue
-            @printer.error(@config["exit"]["push_error"])
+            $printer.error(@config["exit"]["push_error"])
             exit(false)
          end
       end
 
       unless @debug_mode
-         @printer.push(@config["exit"]["push_successful"])
+         $printer.push(@config["exit"]["push_successful"])
          
          unless ["main", "master"].include? status.branch_name
-            @printer.push(@config["exit"]["raise_pr"] % @p.bold.blue(get_repo_link()))
+            $printer.push(@config["exit"]["raise_pr"] % @p.bold.blue(get_repo_link()))
          end
       end
 
