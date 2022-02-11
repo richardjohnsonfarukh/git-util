@@ -58,6 +58,31 @@ class Git
       @questions = Questions.new(@config, @printer, @p)
    end
    
+   def status
+      begin 
+         if @add_all
+            run_command("git add -A")
+         end
+         all_files, e = @cmd.run("git status -s")
+      rescue 
+         @printer.exit(@config["exit"]["not_a_repo"])
+         exit(false)
+      end
+
+      if all_files
+         added_files, err = @cmd.run("git diff --name-only --cached")
+         current_branch, err = @cmd.run("git branch --show-current")
+         status = Status.new(all_files, added_files, current_branch)
+      end
+
+      unless status
+         @printer.exit(@config["exit"]["no_files_selected"])
+         exit(true)
+      end
+      
+      return status
+   end
+
    def add(status)
       unstaged, added = status.get_all_files()
 
@@ -166,36 +191,10 @@ class Git
       if str and str[-1].match(/\.|!|\?/) and str.length > 2
          str = str[0..-2]
       end
-      if is_scope
-         str = "(#{str})"
-      end
-      return str
-   end
-
-   def status
-      begin 
-         if @add_all
-            run_command("git add .")
-         end
-         all_files, e = @cmd.run("git status -s")
-
-      rescue 
-         @printer.exit(@config["exit"]["not_a_repo"])
-         exit(false)
-      end
-
-      if all_files
-         added_files, err = @cmd.run("git diff --name-only --cached")
-         current_branch, err = @cmd.run("git branch --show-current")
-         status = Status.new(all_files, added_files, current_branch)
-      end
-
-      unless status
-         @printer.exit(@config["exit"]["no_files_selected"])
-         exit(true)
-      end
       
-      return status
+      str = "(#{str})" if is_scope
+      
+      return str
    end
 
    def push(status)

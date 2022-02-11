@@ -1,6 +1,5 @@
 #!/usr/bin/ruby
 
-require 'optparse'
 require_relative "git"
 
 def main

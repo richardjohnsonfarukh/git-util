@@ -1,5 +1,3 @@
-HEADING_LEN = 8
-
 module PrintType
    STATUS = "status"
    COMMIT = "commit"
@@ -11,6 +9,8 @@ module PrintType
 end
 
 class Printer
+   HEADING_LEN = 8
+
    def initialize(print_commands, pastel)
       @print_commands = print_commands
       @p = pastel
@@ -49,29 +49,30 @@ class Printer
    end
 
    def text(heading, prompt)
-      if heading.length >= HEADING_LEN - 1
-         heading = heading[0, HEADING_LEN - 3] + "."
-      end
-
-      dashes_right = "-" * ((HEADING_LEN-heading.length) / 2)
-      dashes_left = "-" * (HEADING_LEN-(heading.length+dashes_right.length))
-
+      
       if @print_commands 
-         if heading.eql? PrintType::ERROR
-            heading_prnt = "\n[#{dashes_left}#{@p.red(PrintType::ERROR)}#{dashes_right}]"
-         elsif heading.eql? PrintType::EXIT
-            heading_prnt = "\n[#{dashes_left}#{@p.bright_blue(PrintType::EXIT)}#{dashes_right}]"
+         heading = heading[0, HEADING_LEN - 3] + "." if heading.length >= HEADING_LEN - 1
+   
+         dashes_right = "-" * ((HEADING_LEN-heading.length) / 2)
+         dashes_left = "-" * (HEADING_LEN-(heading.length+dashes_right.length))
+
+         case heading
+         when PrintType::ERROR
+            heading_prnt = "[#{dashes_left}#{@p.red(PrintType::ERROR)}#{dashes_right}]"
+         when PrintType::EXIT
+            heading_prnt = "[#{dashes_left}#{@p.bright_blue(PrintType::EXIT)}#{dashes_right}]"
          else 
-            heading_prnt = "\n[#{dashes_left}#{@p.cyan(heading)}#{dashes_right}]"
+            heading_prnt = "[#{dashes_left}#{@p.cyan(heading)}#{dashes_right}]"
          end
       else
-         if heading.eql? PrintType::ERROR
+         case heading
+         when PrintType::ERROR
             heading_prnt = "#{@p.red.bold("!")}"
-         elsif heading.eql? PrintType::DEBUG
+         when PrintType::DEBUG
             heading_prnt = "#{@p.magenta.bold("$")}"
-         elsif heading.eql? PrintType::EXIT
+         when PrintType::EXIT
             heading_prnt = "#{@p.bright_blue.bold("!")}"
-         elsif heading.eql? PrintType::PUSH
+         when PrintType::PUSH
             heading_prnt = "#{@p.green.bold("!")}"
          else
             heading_prnt = "#{@p.green.bold("?")}"

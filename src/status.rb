@@ -17,7 +17,6 @@ class Status
          unless line.split.length == 4
             arr << line.split[1]
          end
-
       end
 
       arr.delete_if do |file| 
