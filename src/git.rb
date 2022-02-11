@@ -13,11 +13,11 @@ class Git
       @p = Pastel.new
       @print_commands = false
       @debug_mode = false
-      @commit_group = "default"
       $printer = Printer.new(@print_commands, @p)
-
+      
       begin 
          @config = YAML.load(File.read(__dir__ + "/config/" + CONFIG_FILE_NAME))
+         @commit_group = @config["commit"]["commit_groups"]["default"]
       rescue 
          $printer.error("No suitable config file \"#{CONFIG_FILE_NAME}\" has been found - exiting script")
          exit(false)
@@ -39,10 +39,10 @@ class Git
             @config["commit"]["refs_text"] = arg
          end
          parser.on("-s", "--simple", "run without scope, description, refs or co-author") do |arg|
-            @commit_group = "simple"
+            @commit_group = @config["commit"]["commit_groups"]["simple"]
          end
          parser.on("-f", "--full", "run with all possible questions") do |arg|
-            @commit_group = "full"
+            @commit_group = @config["commit"]["commit_groups"]["full"]
          end
          parser.on("-c", "--custom NAME", "run a select commit group by name") do |arg|
             if @config["commit"]["commit_groups"].key?(arg)
@@ -66,7 +66,7 @@ class Git
       end
 
       $printer = Printer.new(@print_commands, @p)
-      @questions = Questions.new(@config, $printer, @p)
+      @questions = Questions.new(@config, @p)
    end
    
    def status
@@ -136,7 +136,6 @@ class Git
    end
 
    def commit
-      # TODO - make the config selectable instead of default
       commit = Commit::new(@commit_group, @questions)
       git_commit = commit.get_commit_message()
 

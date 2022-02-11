@@ -10,9 +10,6 @@ class Commit
    end 
 
    def initialize(commit_group, questions)
-      # based on this one, we will select which commit type we want to use 
-      # should be set on from the parser based on flags instead of here (and will have the value
-      # of the selected config)
       @commit_group = commit_group
       @q = questions
    end
@@ -86,7 +83,6 @@ class Commit
       return "git commit -m \"#{type}#{scope}: #{msg}#{desc}#{refs}#{co_authors}\""
    end
 
-   # TODO include this method
    def process_refs(refs_type, refs_text, refs)
       return refs.nil? || refs.empty? ? "" : "#{refs_type}: #{refs_text}#{refs_num}\n"
    end

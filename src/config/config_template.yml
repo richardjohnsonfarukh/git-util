@@ -1,11 +1,9 @@
 --- 
 commit:
-  scope: true
-  refs: true
-  type: true
-  co_authoring: true
-  description: true
-  multi_co_authoring: false
+  commit_groups:
+    default: [scope, description, refs, co_author]
+    full: [scope, description, refs, multi_co_authors]
+    simple: []
   refs_types: ["Refs", "Fixes", "Closes"]
   refs_text: "<your-team>-"
   min_message_length: 5
@@ -45,6 +43,7 @@ message:
     refs_type: "What is the type of reference?"
     co_author_yes_no: "Would you like to add a co-author"
     co_author: "Who is your co-author?"
+    multi_co_authors: "Who are your co-authors?"
     co_author_name: "What is your co-author's name?"
     co_author_email: "What is your co-author's email address?"
 exit:
