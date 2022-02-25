@@ -10,22 +10,17 @@ class Commit
       MULTI_CO_AUTHOR = "multi_co_authors"
    end 
 
-   PREVIOUS_COMMIT_FILE = "/../.cache/previous_commit.yml"
+   PREVIOUS_COMMIT_FILE_NAME = "/../.cache/previous_commit.yml"
+   COMMIT_FILE_LIMIT = 15
 
-   def initialize(commit_group, questions, status)
-      @commit_group = commit_group
+   def initialize(questions, status, prev_commit_props)
       @q = questions
       @status = status
+      @prev_commit_props = prev_commit_props
    end
-   
-   # the last 5-10 commits should be saved in a FIFO
-   # queue, so that the card numbers are selectable
-   # 
-   # alternatively, this can be used to autofill in the last
-   # co-author and card number based on a selected flag
-   # (will print those out before asking for a commit message)
+
    def process_recent_commits
-      # previous_props = YAML.load(File.read(__dir__ + PREVIOUS_COMMIT_FILE))
+      return nil
    end
 
    def get_commit_message
@@ -33,28 +28,29 @@ class Commit
 
       commit_props[:type] = @q.get_commit_type
 
-      if @commit_group.include? QuestionTypes::SCOPE
+      if $options[:commit_group].include? QuestionTypes::SCOPE
          commit_props[:scope] = @q.get_scope
       end
 
       commit_props[:msg] = @q.get_commit_message(commit_props[:type], commit_props[:scope])
 
-      if @commit_group.include? QuestionTypes::DESCRIPTION
+      if $options[:commit_group].include? QuestionTypes::DESCRIPTION
          commit_props[:description] = @q.get_description
       end
 
-      if @commit_group.include? QuestionTypes::REFS
-         # - if refs is an empty flag, ask the question regardless
-         #   of the commit config
-         # - if refs is a flag with a value or we are pulling values from 
-         #   old commits, then don't ask a question but assume a value
-         # - otherwise, if it is in the config for the current type, ask the question
+      if $options[:prev]
+         commit_props[:refs_type] = @prev_commit_props[0][:refs_type]
+         commit_props[:refs_text] = @prev_commit_props[0][:refs_text]
+         commit_props[:refs_num] = @prev_commit_props[0][:refs_num]
+      elsif $options[:commit_group].include? QuestionTypes::REFS
          commit_props.merge!(@q.get_refs)
       end
 
-      if @commit_group.include? QuestionTypes::MULTI_CO_AUTHOR
+      if $options[:prev] 
+         commit_props[:co_authors] = @prev_commit_props.empty? ? nil : @prev_commit_props[0][:co_authors]
+      elsif $options[:commit_group].include? QuestionTypes::MULTI_CO_AUTHOR
          commit_props[:co_authors] = @q.get_multi_co_authors
-      elsif  @commit_group.include? QuestionTypes::CO_AUTHOR
+      elsif $options[:commit_group].include? QuestionTypes::CO_AUTHOR
          commit_props[:co_authors] = @q.get_co_author
       end
 
@@ -64,18 +60,13 @@ class Commit
    end
 
    def save_commit(commit_props)
-      begin
-         previous_props = YAML.load(File.read(__dir__ + PREVIOUS_COMMIT_FILE))
-         previous_props.pop() if previous_props.length == 5
-      rescue
-         previous_props = Array.new
-      end
+      @prev_commit_props.pop() if @prev_commit_props.length == COMMIT_FILE_LIMIT
 
       commit_props[:repo_url => @status.repo_url]
       commit_props[:branch_name => @status.branch_name]
-      previous_props.unshift(commit_props)
+      @prev_commit_props.unshift(commit_props)
       
-      File.write(__dir__ + PREVIOUS_COMMIT_FILE, YAML.dump(previous_props))
+      File.write(__dir__ + PREVIOUS_COMMIT_FILE_NAME, YAML.dump(@prev_commit_props))
    end
 
    def get_commit_string(commit_props)

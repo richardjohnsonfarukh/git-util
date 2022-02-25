@@ -4,10 +4,10 @@ require_relative "git"
 
 def main
    git = Git.new
-   status = git.status()
-   git.add(status)
-   git.commit(status)
-   git.push(status)
+   git.status
+   git.add
+   git.commit
+   git.push
 end 
 
 main()

@@ -19,6 +19,10 @@ class Printer
    def print(heading, prompt)
       puts (text(heading, prompt))
    end
+   
+   def commit(prompt)
+      puts text(PrintType::COMMIT, prompt)
+   end
 
    def commit_text(prompt)
       return text(PrintType::COMMIT, prompt)
