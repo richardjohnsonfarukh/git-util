@@ -9,7 +9,7 @@ commit:
   min_message_length: 5
   max_message_length: 100
   max_description_length: 5
-  scope_length: 15
+  max_scope_length: 15
   co_authoring_file: co-authors.yml
   types:
     - name: feat

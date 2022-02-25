@@ -44,8 +44,8 @@ class Questions
 
    def get_scope
       return @prompt.ask($printer.commit_text(@config["message"]["scope"])) do |q|
-         q.validate(/^.{0,#{@config["commit"]["scope_length"]}}$/,
-            "Length can't be more than #{@config["commit"]["scope_length"]} characters")
+         q.validate(/^.{0,#{@config["commit"]["max_scope_length"]}}$/,
+            "Length can't be more than #{@config["commit"]["max_scope_length"]} characters")
          q.convert -> (i) do
             i.strip!
             return i

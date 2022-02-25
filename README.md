@@ -36,12 +36,17 @@ You can use the command the following way:
 
 - `$ acp [options]`
 
-| options           | function                                            |
-| ----------------- | --------------------------------------------------- |
-| `-a`, `--all`     | adds all git files before executing                 |
-| `-d`, `--debug`   | doesn't execute git commands - used for development |
-| `-v`, `--verbose` | prints all executed git commands                    |
-| `-h`, `--help`    | prints help menu                                    |
+| options                | function                                                |
+| ---------------------- | ------------------------------------------------------- |
+| `-a`, `--all`          | adds all git files before executing                     |
+| `-d`, `--debug`        | doesn't execute git commands - used for development     |
+| `-v`, `--verbose`      | prints all executed git commands                        |
+| `-s`, `--simple`       | run without scope, description, refs or co-author       |
+| `-f`, `--full`         | run with all possible questions                         |
+| `-c`, `--custom NAME`  | run a select commit group by name                       |
+| `-r`, `--ref REF_TEXT` | overwrite the reference string with an argument         |
+| `-n`, `--num REFS_NUM` | specify the reference number (takes priority over --ref |
+| `-h`, `--help`         | prints help menu                                        |
 
 The script will build a commit in the following style:
 
@@ -53,7 +58,7 @@ $ git commit -m "feat(scope): commit message
 - second line of description
 
 Refs: <your-team>-123
-Co-authored-by: Author <author@mail.uk>"
+Co-authored-by: Author <author@email.uk>"
 
 ```
 
@@ -72,25 +77,20 @@ Co-authored-by: Author <author@mail.uk>"
 ```yaml
 --- 
 commit:
-  # enable/disable scope question
-  scope: true
+  # custom commit groups you can add to, and reference using the -c flag
+  # at the minimum, groups will ask for a feature type and a commit message
+  # accepted group members are: [scope, description, refs, co_author, multi_co_authors]
+  commit_groups:
+    # this group will be used if no group parameters are specified (--custom, --full, --simple)
+    default: [scope, description, refs, co_author]
 
-  # enable/disable refs question
-  refs: true
+    # this group will be used if the --full flag is specified
+    full: [scope, description, refs, multi_co_authors]
 
-  # enable/disable type question
-  type: true
+    # this group will be used if the --simple flag is specified 
+    simple: []
 
-  # enable/disable co-authoring question
-  co_authoring: true
-
-  # enable/disable multi co-authoring (future development)
-  multi_co_authoring: false
-
-  # enable/disable extended description question
-  description: true
-
-  # possible ref types from the selector - if only one is selected, it will be selected by default
+  # possible ref types from the selector - if only one is listed in the config, it will always be selected by default
   refs_types: ["Refs", "Fixes", "Closes"]
 
   # text which will be apended to the selected ref type - use this to reference Jira or GitHub stories by number
@@ -106,9 +106,9 @@ commit:
   max_description_length: 5
 
   # maximum character length for the scope of the commit
-  scope_length: 15
+  max_scope_length: 15
 
-  # name of the referenced co-authoring file
+  # name of the referenced co-authoring file (found in src/configs)
   co_authoring_file: co-authors.yml
 
   # all the types of commit in the prompt and their descriptions
@@ -152,6 +152,7 @@ message:
     refs_type: "What is the type of reference?"
     co_author_yes_no: "Would you like to add a co-author"
     co_author: "Who is your co-author?"
+    multi_co_authors: "Who are your co-authors?"
     co_author_name: "What is your co-author's name?"
     co_author_email: "What is your co-author's email address?"
 
@@ -169,15 +170,21 @@ exit:
 ```
 ## Info
 
+The script util aims to only make changes within its own directory, and it only modifies and creates `src/config/co-authors.yml` and `.cache/previous_commit.yml`.
+
+NOTE: There is a growth limit of 15 commits on `.cache/previous_commit.yml`, however there are no limits on creating new co-authors!
+
 Commands that will be executed in your terminal from the script are:
 
 | command                                        | usage                                                                            |
 | ---------------------------------------------- | -------------------------------------------------------------------------------- |
-| `git restore --staged <files>`                 | restores staged files                                                            |
-| `git add <files>`                              | adds selected files for staging                                                  |
 | `git status -s`                                | gets all files from git (untracked, staged, modified, renamed..)                 |
 | `git diff --name-only --cached`                | gets only the changed tracked files                                              |
-| `git commit -m <message>`                      | commits with a given message                                                     |
 | `git branch --show-current`                    | gets the current branch                                                          |
+| `git config --local remote.origin.url`         | gets the link to the remote repository                                           |
+| `git add <files>`                              | adds selected files for staging                                                  |
+| `git add -A`                                   | adds all files in the repo                                                       |
+| `git restore --staged <files>`                 | restores staged files                                                            |
+| `git commit -m <message>`                      | commits with a given message                                                     |
 | `git push`                                     | pushes to repository                                                             |
 | `git push --set-upstream origin <branch_name>` | if pushing fails, sets the upstream to  have the same name as the current branch |
