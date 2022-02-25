@@ -83,8 +83,8 @@ class Commit
       return "git commit -m \"#{type}#{scope}: #{msg}#{desc}#{refs}#{co_authors}\""
    end
 
-   def process_refs(refs_type, refs_text, refs)
-      return refs.nil? || refs.empty? ? "" : "#{refs_type}: #{refs_text}#{refs_num}\n"
+   def process_refs(refs_type, refs_text, refs_num)
+      return refs_num.nil? || refs_num.empty? ? "" : "#{refs_type}: #{refs_text}#{refs_num}\n"
    end
 
    def process_co_authors(co_authors)

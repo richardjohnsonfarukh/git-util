@@ -90,7 +90,7 @@ class Questions
          if refs_types.length() > 1
             refs_type = @prompt.select($printer.text(PrintType::COMMIT, @config["message"]["refs_type"]), refs_types, cycle: true, filter: true)
          else
-            refs_type = refs_num, refs_types[0]
+            refs_type = refs_types[0]
          end
       end
 
@@ -98,7 +98,7 @@ class Questions
    end
 
    def get_co_author
-      use_co_author = @prompt.yes?($printer.text(PrintType::COMMIT, @config["message"]["co_author_yes_no"]))
+      use_co_author = @prompt.yes?($printer.text(PrintType::COMMIT, @config["message"]["co_author_yes_no"]))      
       return Array.new unless use_co_author
 
       co_authors, co_authors_config = co_author_hash()
@@ -154,7 +154,12 @@ class Questions
          return Hash.new
       end
 
-      co_authors = YAML.load(File.read(__dir__ + "/config/" +  @config["commit"]["co_authoring_file"]))
+      begin 
+         co_authors = YAML.load(File.read(__dir__ + "/config/" +  @config["commit"]["co_authoring_file"]))
+      rescue
+         return Hash.new
+      end
+      
       co_authors_hash = Hash.new
 
       unless co_authors
