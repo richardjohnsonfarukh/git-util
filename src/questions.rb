@@ -94,7 +94,7 @@ class Questions
          end
       end
 
-      return refs_type, @config["commit"]["refs_text"], refs_num
+      return {:refs_type => refs_type, :refs_text => @config["commit"]["refs_text"], :refs_num => refs_num}
    end
 
    def get_co_author
@@ -159,7 +159,7 @@ class Questions
       rescue
          return Hash.new
       end
-      
+
       co_authors_hash = Hash.new
 
       unless co_authors

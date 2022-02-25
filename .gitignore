@@ -3,3 +3,4 @@ Gemfile.lock
 co-authors.yml
 .swp
 config.yml
+.cache

@@ -6,7 +6,7 @@ def main
    git = Git.new
    status = git.status()
    git.add(status)
-   git.commit()
+   git.commit(status)
    git.push(status)
 end 
 

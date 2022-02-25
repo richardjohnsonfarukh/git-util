@@ -83,7 +83,8 @@ class Git
       if all_files
          added_files, err = @cmd.run("git diff --name-only --cached")
          current_branch, err = @cmd.run("git branch --show-current")
-         status = Status.new(all_files, added_files, current_branch)
+         repo_url, err = @cmd.run("git config --local remote.origin.url")
+         status = Status.new(all_files, added_files, current_branch, repo_url)
       end
 
       unless status
@@ -135,8 +136,8 @@ class Git
       end
    end
 
-   def commit
-      commit = Commit::new(@commit_group, @questions)
+   def commit(status)
+      commit = Commit::new(@commit_group, @questions, status)
       git_commit = commit.get_commit_message()
 
       begin
@@ -171,14 +172,13 @@ class Git
          $printer.push(@config["exit"]["push_successful"])
          
          unless ["main", "master"].include? status.branch_name
-            $printer.push(@config["exit"]["raise_pr"] % @p.bold.blue(get_repo_link()))
+            $printer.push(@config["exit"]["raise_pr"] % @p.bold.blue(get_repo_link(status.repo_url)))
          end
       end
 
    end
 
-   def get_repo_link
-      repo_url, e = @cmd.run("git config --get remote.origin.url")
+   def get_repo_link(repo_url)
       return "#{repo_url.strip.chomp(".git")}/pull/new/#{status.branch_name}"
    end
 end
