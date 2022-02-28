@@ -81,13 +81,14 @@ class Commit
          commit_props[:refs_num]
       )
 
+      refs.concat("\n") if !co_authors.empty?
       desc.concat("\n\n") if !co_authors.empty? or !refs.empty?
 
       return "git commit -m \"#{type}#{scope}: #{msg}#{desc}#{refs}#{co_authors}\""
    end
 
    def process_refs(refs_type, refs_text, refs_num)
-      return refs_num.nil? || refs_num.empty? ? "" : "#{refs_type}: #{refs_text}#{refs_num}\n"
+      return refs_num.nil? || refs_num.empty? ? "" : "#{refs_type}: #{refs_text}#{refs_num}"
    end
 
    def process_co_authors(co_authors)
